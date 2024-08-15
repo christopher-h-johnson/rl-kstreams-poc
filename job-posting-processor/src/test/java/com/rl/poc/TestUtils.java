@@ -12,10 +12,6 @@ import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.streams.KeyValue;
-import software.amazon.awssdk.services.ssm.SsmClient;
-import software.amazon.awssdk.services.ssm.model.GetParameterResponse;
-import software.amazon.awssdk.services.ssm.model.Parameter;
-import software.amazon.awssdk.services.ssm.model.SsmException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,26 +50,4 @@ public class TestUtils {
         return new KeyValue<>(key, value);
     }
 
-    public String getSsmParam(String paramName) {
-        SsmClient secretsClient = SsmClient.create();
-        String password = getValue(secretsClient, paramName);
-        secretsClient.close();
-        return password;
-    }
-
-    public String getValue(SsmClient ssmClient, String paramName) {
-        String password;
-        try {
-            GetParameterResponse valueResponse = ssmClient.getParameter(r -> r.withDecryption(Boolean.TRUE).name(paramName));
-            Parameter param = valueResponse.parameter();
-            if (param != null) {
-                password = param.value();
-                return password;
-            }
-        } catch (SsmException e) {
-            log.error("could not get SSM credential, please authenticate to AWS");
-            System.exit(1);
-        }
-        return null;
-    }
 }

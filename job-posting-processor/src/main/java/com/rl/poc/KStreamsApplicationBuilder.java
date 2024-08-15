@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler;
-import org.opensearch.client.RestHighLevelClient;
 
 import java.util.Map;
 import java.util.Objects;
@@ -39,14 +38,9 @@ public class KStreamsApplicationBuilder {
         final Properties saslConfig = configUtils.setSaslConfig(envProps);
         final Properties properties = Stream.of(streamProps, saslConfig).collect(Properties::new, Map::putAll, Map::putAll);
 
-        RestHighLevelClient restHighLevelClient = null;
-
-        if (envProps.containsKey("search.secret.name")) {
-            restHighLevelClient = configUtils.getSearchClient(envProps);
-        }
 
         processorClass.createTopics(envProps, saslConfig);
-        final Topology topology = processorClass.buildTopology(envProps, restHighLevelClient).build(properties);
+        final Topology topology = processorClass.buildTopology(envProps).build(properties);
 
         final KafkaStreams streams = new KafkaStreams(topology, properties);
         streams.setUncaughtExceptionHandler((exception) ->

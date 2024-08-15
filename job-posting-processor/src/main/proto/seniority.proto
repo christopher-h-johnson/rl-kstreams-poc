@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.rl.poc";
+option java_outer_classname = "SeniorityProto";
+option objc_class_prefix = "SN";
+
+service SeniorityService {
+  rpc InferSeniority (SeniorityRequestBatch) returns (SeniorityResponseBatch);
+}
+
+message SeniorityRequestBatch {
+  repeated SeniorityRequest batch = 1;
+}
+
+message SeniorityRequest {
+  string uuid = 1;
+  string company = 2;
+  string title = 3;
+}
+
+message SeniorityResponseBatch {
+  repeated SeniorityResponse batch = 1;
+}
+
+message SeniorityResponse {
+  string uuid = 1;
+  int32 seniority = 2;
+}
