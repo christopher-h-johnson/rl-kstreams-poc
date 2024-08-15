@@ -59,7 +59,7 @@ public class JobPostingProcessorIT extends AbstractContainerTest {
     }
 
     List<TestRecord<String, JobPosting>> buildJobPostingRecords() {
-        List<JobPosting> jobPostings = new ArrayList<>();
+        final List<JobPosting> jobPostings = new ArrayList<>();
         IntStream.range(0, 10).forEach(i -> {
             final JobPosting jobPosting = Instancio.of(JobPosting.class)
                     .generate(field("title"), gen -> gen.oneOf("Accounting Intern",
@@ -76,7 +76,7 @@ public class JobPostingProcessorIT extends AbstractContainerTest {
             jobPostings.add(jobPosting);
         });
 
-        List<TestRecord<String, JobPosting>> testRecords = new ArrayList<>();
+        final List<TestRecord<String, JobPosting>> testRecords = new ArrayList<>();
         jobPostings.forEach(p -> {
             String hashKey = p.getCompany() + "_" + p.getTitle();
             TestRecord<String, JobPosting> jobPostingTestRecord = new TestRecord<>(hashKey, p);
@@ -86,16 +86,16 @@ public class JobPostingProcessorIT extends AbstractContainerTest {
     }
 
     List<TestRecord<String, JobPosting>> buildSeniorityRecords(List<TestRecord<String, JobPosting>> jobs) {
-        List<TestRecord<String, JobPosting>> testRecords = new ArrayList<>();
+        final List<TestRecord<String, JobPosting>> testRecords = new ArrayList<>();
         jobs.forEach(j -> {
-            List<Pair<String, Integer>> seniorityPairs = getSeniorityPairs();
-            String title = j.getValue().getTitle();
-            Integer seniorityForTitle = seniorityPairs.stream()
+            final List<Pair<String, Integer>> seniorityPairs = getSeniorityPairs();
+            final String title = j.getValue().getTitle();
+            final Integer seniorityForTitle = seniorityPairs.stream()
                     .filter(p -> title.equals(p.getValue0()))
                     .map(Pair::getValue1)
                     .findAny()
                     .orElse(0);
-            JobPosting seniority = Instancio.of(JobPosting.class)
+            final JobPosting seniority = Instancio.of(JobPosting.class)
                 .assign(Assign.valueOf(JobPosting::getSeniority).set(seniorityForTitle))
                 .create();
                 TestRecord<String, JobPosting> seniorityTestRecord = new TestRecord<>(j.key(), seniority);
@@ -115,14 +115,17 @@ public class JobPostingProcessorIT extends AbstractContainerTest {
 
 //        final KeyValue<String, String> account1Record = compositeJobPostings.stream().filter(sd
 //                -> sd.key.equals(jobPostingKey)).toList().getFirst();
-          assertEquals(1, compositeJobPostings.size());
+          assertEquals(10, compositeJobPostings.size());
     }
 
     private void createTestTopics(Properties envProps) {
         final Serializer<String> stringSerializer = Serdes.String().serializer();
         final Deserializer<String> stringDeserializer = Serdes.String().deserializer();
+        Map<String, Object> serdeProps = new HashMap<>();
+        serdeProps.put("JsonClass", JobPosting.class);
         final Serializer<JobPosting> jobPostingSerializer = new JsonSerializer<>();
-        final Deserializer<JobPosting> compositeJobPostingDeserializer = new JsonDeserializer<>();
+        final Deserializer<JobPosting> jobPostingDeserializer = new JsonDeserializer<>();
+        jobPostingDeserializer.configure(serdeProps, false);
 
         jobPostingTopic = testDriver.createInputTopic(
                 envProps.getProperty(TopicConfig.JOB_POSTING_TOPIC_NAME_CONFIG),
@@ -135,6 +138,6 @@ public class JobPostingProcessorIT extends AbstractContainerTest {
         compositeJobPostingTopic = testDriver.createOutputTopic(
                 envProps.getProperty(TopicConfig.COMPOSITE_JOB_POSTING_TOPIC_NAME_CONFIG),
                 stringDeserializer,
-                compositeJobPostingDeserializer);
+                jobPostingDeserializer);
     }
 }

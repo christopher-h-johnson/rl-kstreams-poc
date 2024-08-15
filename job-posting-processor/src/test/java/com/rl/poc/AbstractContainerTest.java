@@ -61,17 +61,11 @@ public class AbstractContainerTest {
     }
 
     static {
-//        try {
-//            file = File.createTempFile("docker-compose", ".tmp");
-//            FileUtils.copyInputStreamToFile(COMPOSE_FILE, file);
-//        } catch (IOException e) {
-//            log.error(e.getMessage());
-//        }
         composeContainer =
                 new DockerComposeContainer<>(new File("src/test/resources/docker-compose.yml"))
                         .withExposedService(KAFKA_SERVICE_NAME, KAFKA_PORT)
                         .waitingFor(KAFKA_SERVICE_NAME,
-                                Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(6)));
+                                Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(8)));
         composeContainer.start();
     }
 

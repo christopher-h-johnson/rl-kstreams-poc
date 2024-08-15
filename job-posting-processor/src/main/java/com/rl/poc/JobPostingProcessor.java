@@ -1,5 +1,6 @@
 package com.rl.poc;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.rl.poc.grpc.SeniorityService;
 import com.rl.poc.models.JobPosting;
 import com.rl.poc.serdes.JsonDeserializer;
@@ -13,7 +14,6 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.*;
-import org.grpcmock.GrpcMock;
 
 import java.util.*;
 
@@ -72,8 +72,8 @@ public final class JobPostingProcessor implements KStreamsApplication {
                         .stream(envProps.getProperty(TopicConfig.SENIORITY_TOPIC_NAME_CONFIG),
                                 Consumed.with(Serdes.String(), jobPostingSerde));
 
+
         final KTable<String, JobPosting> seniorityTable = seniorityStream
-                .selectKey((k,v) -> v.getCompany() + "_" + v.getTitle())
                 .toTable();
 
         final SeniorityJoiner seniorityJoiner = SeniorityJoiner.builder()
