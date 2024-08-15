@@ -1,5 +1,6 @@
 package com.rl.poc;
 
+import com.rl.poc.grpc.ApiService;
 import lombok.Builder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +39,14 @@ public class KStreamsApplicationBuilder {
         final Properties saslConfig = configUtils.setSaslConfig(envProps);
         final Properties properties = Stream.of(streamProps, saslConfig).collect(Properties::new, Map::putAll, Map::putAll);
 
+        ApiService apiService = null;
+
+        if (envProps.containsKey("api.service.address")) {
+            apiService = configUtils.getApiService(envProps);
+        }
 
         processorClass.createTopics(envProps, saslConfig);
-        final Topology topology = processorClass.buildTopology(envProps).build(properties);
+        final Topology topology = processorClass.buildTopology(envProps, apiService).build(properties);
 
         final KafkaStreams streams = new KafkaStreams(topology, properties);
         streams.setUncaughtExceptionHandler((exception) ->

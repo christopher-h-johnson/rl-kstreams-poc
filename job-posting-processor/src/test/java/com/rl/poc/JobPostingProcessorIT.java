@@ -1,26 +1,37 @@
 package com.rl.poc;
 
+import com.rl.poc.grpc.ApiService;
 import com.rl.poc.models.JobPosting;
 import com.rl.poc.serdes.JsonDeserializer;
 import com.rl.poc.serdes.JsonSerializer;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.test.TestRecord;
+import org.grpcmock.GrpcMock;
+import org.grpcmock.junit5.GrpcMockExtension;
 import org.instancio.Assign;
 import org.instancio.Instancio;
 import org.javatuples.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.grpcmock.GrpcMock.stubFor;
+import static org.grpcmock.GrpcMock.unaryMethod;
 import static org.instancio.Select.field;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(GrpcMockExtension.class)
 public class JobPostingProcessorIT extends AbstractContainerTest {
+
     TestInputTopic<String, JobPosting> jobPostingTopic;
     TestInputTopic<String, JobPosting> seniorityTopic;
     TestOutputTopic<String, JobPosting> compositeJobPostingTopic;
@@ -28,7 +39,12 @@ public class JobPostingProcessorIT extends AbstractContainerTest {
     @BeforeEach
     public void setup() {
         final JobPostingProcessor jst = new JobPostingProcessor();
-        final Topology topology = jst.buildTopology(envProps).build(streamProps);
+        final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", GrpcMock.getGlobalPort())
+                .usePlaintext()
+                .build();
+        final ApiService seniorityService = new ApiService(channel);
+        final Topology topology = jst.buildTopology(envProps, seniorityService)
+                .build(streamProps);
         testDriver = new TopologyTestDriver(topology, streamProps);
         createTestTopics(envProps);
     }
@@ -113,9 +129,36 @@ public class JobPostingProcessorIT extends AbstractContainerTest {
 
         final List<KeyValue<String, JobPosting>> compositeJobPostings = compositeJobPostingTopic.readKeyValuesToList();
 
-//        final KeyValue<String, String> account1Record = compositeJobPostings.stream().filter(sd
-//                -> sd.key.equals(jobPostingKey)).toList().getFirst();
-          assertEquals(10, compositeJobPostings.size());
+        final KeyValue<String, JobPosting> compositeJobPostingRecord = compositeJobPostings.stream().toList().getFirst();
+        assertThat(compositeJobPostingRecord.value.getSeniority()).isGreaterThan(0);
+        assertEquals(10, compositeJobPostings.size());
+    }
+
+    @Test
+    public void testApiBranch() {
+        final String uuid = UUID.randomUUID().toString();
+        final SeniorityResponse responseMessage = SeniorityResponse.newBuilder()
+                .setSeniority(1)
+                .setUuid(uuid)
+                .build();
+        final SeniorityResponseBatch expectedResponseBatch = SeniorityResponseBatch.newBuilder()
+                .addBatch(responseMessage)
+                .build();
+        stubFor(unaryMethod(SeniorityServiceGrpc.getInferSeniorityMethod())
+                .willReturn(expectedResponseBatch));
+
+        final List<TestRecord<String, JobPosting>> jobPostingRecords = buildJobPostingRecords();
+        // first list of records use the API
+        jobPostingTopic.pipeRecordList(jobPostingRecords);
+        // send list of records join with cached topic and are emitted into the composite output topic.
+        // API is not called.
+        jobPostingTopic.pipeRecordList(jobPostingRecords);
+        final List<KeyValue<String, JobPosting>> compositeJobPostings = compositeJobPostingTopic.readKeyValuesToList();
+
+        final KeyValue<String, JobPosting> compositeJobPostingRecord = compositeJobPostings.stream().toList().getFirst();
+        // seniority is set to 1 in api service mock response
+        assertEquals(1, compositeJobPostingRecord.value.getSeniority());
+        assertEquals(20, compositeJobPostings.size());
     }
 
     private void createTestTopics(Properties envProps) {

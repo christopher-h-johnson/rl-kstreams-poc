@@ -1,6 +1,6 @@
 package com.rl.poc;
 
-import com.rl.poc.grpc.SeniorityService;
+import com.rl.poc.grpc.ApiService;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.grpcmock.GrpcMock;
@@ -15,19 +15,20 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.grpcmock.GrpcMock.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(GrpcMockExtension.class)
 class SeniorityServiceTest {
 
     private ManagedChannel channel;
-    private SeniorityService seniorityService;
+    private ApiService seniorityService;
 
     @BeforeEach
     void setup() {
         channel = ManagedChannelBuilder.forAddress("localhost", GrpcMock.getGlobalPort())
                 .usePlaintext()
                 .build();
-        seniorityService = new SeniorityService(channel);
+        seniorityService = new ApiService(channel);
     }
 
     @AfterEach
@@ -64,10 +65,7 @@ class SeniorityServiceTest {
 
         SeniorityResponseBatch response = seniorityService.send(requestBatch);
 
-//        assertThat(response)
-//                .usingRecursiveComparison()
-//                .ignoringFields("value.lastUpdated")
-//                .isEqualTo(expectedResponseBatch);
+        assertEquals(1, response.getBatch(0).getSeniority());
         verifyThat(calledMethod(SeniorityServiceGrpc.getInferSeniorityMethod())
                 .withRequest(requestBatch));
     }

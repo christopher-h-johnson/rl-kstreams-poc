@@ -7,16 +7,16 @@ import io.grpc.*;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class SeniorityService {
+public class ApiService {
 
     private final SeniorityServiceGrpc.SeniorityServiceBlockingStub blockingStub;
 
-    public SeniorityService(Channel channel) {
+    public ApiService(Channel channel) {
         blockingStub = SeniorityServiceGrpc.newBlockingStub(channel);
     }
 
     public SeniorityResponseBatch send(SeniorityRequestBatch requestBatch) {
-        log.info("Sending batch inference request of {} count", requestBatch.getBatchCount());
+        log.info("Sending batch inference with {} request", requestBatch.getBatchCount());
         SeniorityResponseBatch responseBatch = null;
         try {
             responseBatch = blockingStub.inferSeniority(requestBatch);

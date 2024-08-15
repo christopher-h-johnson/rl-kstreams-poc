@@ -1,7 +1,8 @@
 package com.rl.poc;
 
-import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
-import io.confluent.kafka.streams.serdes.avro.SpecificAvroSerde;
+import com.rl.poc.grpc.ApiService;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -76,6 +77,15 @@ public class ConfigurationUtils {
 
     public Properties setSaslConfig(Properties envProps) {
         return new Properties();
+    }
+
+    public ApiService getApiService(Properties envProps) {
+        final ManagedChannel channel = ManagedChannelBuilder
+                .forAddress(envProps.getProperty("api.service.address"),
+                        Integer.parseInt(envProps.getProperty("api.service.port")))
+                .usePlaintext()
+                .build();
+        return new ApiService(channel);
     }
 
 }

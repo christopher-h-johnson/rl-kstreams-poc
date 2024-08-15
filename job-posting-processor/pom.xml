@@ -35,7 +35,6 @@
         <logback.version>1.5.6</logback.version>
         <lombok.version>1.18.32</lombok.version>
         <maven-jar-plugin.version>3.4.1</maven-jar-plugin.version>
-        <opensearch.version>2.14.0</opensearch.version>
         <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>

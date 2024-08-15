@@ -1,6 +1,6 @@
 package com.rl.poc;
 
-import com.rl.poc.grpc.SeniorityService;
+import com.rl.poc.grpc.ApiService;
 import com.rl.poc.models.JobPosting;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -12,23 +12,26 @@ import java.net.URISyntaxException;
 @Builder
 @Slf4j
 public class SeniorityMapper implements ValueMapper<JobPosting, JobPosting> {
-    SeniorityService seniorityService;
+    ApiService seniorityService;
 
     public JobPosting apply(JobPosting posting) {
 
-        SeniorityRequest expectedRequest = SeniorityRequest.newBuilder()
+        SeniorityRequest request = SeniorityRequest.newBuilder()
                 .setCompany(posting.getCompany())
                 .setTitle(posting.getTitle())
                 .setUuid(getUUID(posting.getUrl()))
                 .build();
 
         SeniorityRequestBatch requestBatch = SeniorityRequestBatch.newBuilder()
-                .addBatch(expectedRequest)
+                .addBatch(request)
                 .build();
+
         SeniorityResponseBatch response = seniorityService.send(requestBatch);
-        int seniority = response.getBatchList().getFirst().getSeniority();
-        posting.setSeniority(seniority);
-        log.info("received response of seniority {} from service", response.getBatchList().getFirst().getSeniority());
+        if (response != null) {
+            int seniority = response.getBatchList().getFirst().getSeniority();
+            posting.setSeniority(seniority);
+            log.info("received response of seniority {} from service", response.getBatchList().getFirst().getSeniority());
+        }
         return posting;
     }
 

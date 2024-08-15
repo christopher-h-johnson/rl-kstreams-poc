@@ -7,7 +7,7 @@ import org.apache.kafka.streams.kstream.ValueJoiner;
 
 @Builder
 @Slf4j
-public final class SeniorityJoiner implements ValueJoiner<JobPosting, JobPosting, JobPosting> {
+public final class ApiCacheJoiner implements ValueJoiner<JobPosting, JobPosting, JobPosting> {
 
     public JobPosting apply(JobPosting posting, JobPosting seniority) {
         if (seniority != null) {
@@ -19,7 +19,7 @@ public final class SeniorityJoiner implements ValueJoiner<JobPosting, JobPosting
                     .url(posting.getUrl())
                     .build();
         }
-        return null;
+        return posting;
     }
 
 }
